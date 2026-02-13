@@ -1,14 +1,39 @@
-const CACHE = "lotcalc";
-self.addEventListener("install", e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => {
-      return cache.addAll(["./", "./index.html"]);
-    })
+// Updated service worker for cache versioning
+const CACHE_NAME = "lotcalc-v2"; // Increment this version when updating
+const FILES_TO_CACHE = [
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./icon.png"
+];
+
+// Install event - cache files
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
   );
+  self.skipWaiting();
 });
 
-self.addEventListener("fetch", e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+// Activate event - remove old caches
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.map(key => {
+          if (key !== CACHE_NAME) return caches.delete(key);
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Fetch event - serve cached files if offline
+self.addEventListener("fetch", event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
   );
 });

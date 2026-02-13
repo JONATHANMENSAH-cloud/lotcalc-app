@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lot Size Calculator</title>
+
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#22c55e">
+
+<style>
+body{
+  margin:0;
+  font-family:system-ui,Arial;
+  background:radial-gradient(circle at top,#0b1a2a,#020617);
+  color:#e5e7eb;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+.app{
+  width:100%;
+  max-width:380px;
+  background:linear-gradient(160deg,#020617,#020617cc);
+  padding:22px;
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.05);
+  box-shadow:0 0 25px rgba(34,197,94,.3),
+             0 0 50px rgba(56,189,248,.2);
+}
+h2{
+  text-align:center;
+  margin-bottom:14px;
+  font-weight:800;
+  background:linear-gradient(90deg,#22c55e,#38bdf8,#a855f7);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+label{
+  display:block;
+  margin-top:12px;
+  font-size:13px;
+  color:#94a3b8;
+}
+input,select{
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  border-radius:12px;
+  border:1px solid #1e293b;
+  background:#020617;
+  color:#fff;
+  font-size:16px;
+  outline:none;
+}
+input:focus,select:focus{
+  border-color:#22c55e;
+  box-shadow:0 0 10px rgba(34,197,94,.5);
+}
+button{
+  width:100%;
+  padding:14px;
+  margin-top:18px;
+  border-radius:14px;
+  border:none;
+  font-size:17px;
+  font-weight:bold;
+  cursor:pointer;
+  background:linear-gradient(90deg,#22c55e,#38bdf8);
+  color:#020617;
+  box-shadow:0 0 20px rgba(34,197,94,.6);
+}
+button:hover{
+  box-shadow:0 0 35px rgba(56,189,248,.8);
+}
+.result{
+  margin-top:16px;
+  padding:14px;
+  border-radius:14px;
+  background:#020617;
+  border:1px solid #1e293b;
+  text-align:center;
+  font-size:18px;
+  white-space:pre-line;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <h2>Lot Size Calculator</h2>
+
+  <label>Custom Pip Value ($ per lot)</label>
+  <input type="number" id="pipValue" placeholder="e.g., 10">
+
+  <label>Instrument</label>
+  <select id="pair">
+    <option value="EURUSD">EUR/USD</option>
+    <option value="GBPUSD">GBP/USD</option>
+    <option value="XAUUSD">XAU/USD</option>
+  </select>
+
+  <label>Account Balance ($)</label>
+  <input type="number" id="balance" placeholder="10000">
+
+  <label>Risk Amount ($)</label>
+  <input type="number" id="risk" placeholder="100">
+
+  <label>Pips (Distance to Stop Loss)</label>
+  <input type="number" id="pips" placeholder="50">
+
+  <button id="calcBtn">CALCULATE</button>
+
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+// Load saved values on page load
+window.addEventListener('load', function() {
+  const ids = ['pipValue','balance','risk','pips','pair'];
+  ids.forEach(id => {
+    const saved = localStorage.getItem(id);
+    if(saved !== null) document.getElementById(id).value = saved;
+  });
+});
+
+// Save values on change
+['pipValue','balance','risk','pips','pair'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function(){
+    localStorage.setItem(id,this.value);
+  });
+});
+
+// Calculate lot size
+document.getElementById("calcBtn").addEventListener("click", function(){
+  const pipValue = parseFloat(document.getElementById("pipValue").value);
+  const balance = parseFloat(document.getElementById("balance").value);
+  const risk = parseFloat(document.getElementById("risk").value);
+  const pips = parseFloat(document.getElementById("pips").value);
+  const pair = document.getElementById("pair").value;
+  const result = document.getElementById("result");
+
+  if(!pipValue || !balance || !risk || !pips){
+    result.textContent = "Please fill all fields";
+    return;
+  }
+
+  let actualPipValue = pipValue;
+  if(actualPipValue <= 0){
+    if(pair === 'XAUUSD') actualPipValue = 100; // Gold default pip value
+    else actualPipValue = 10; // Forex default pip value
+  }
+
+  const lot = risk / (pips * actualPipValue);
+
+  result.textContent = `Lot Size: ${lot.toFixed(2)} lots\nRisk Amount: $${risk.toFixed(2)}\nPips: ${pips}\nPip Value: $${actualPipValue}`;
+});
+</script>
+</body>
+</html>
